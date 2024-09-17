@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2018-2020 Jolla Ltd.
- * Copyright (C) 2018-2020 Slava Monich <slava.monich@jolla.com>
+ * Copyright (C) 2018-2022 Jolla Ltd.
+ * Copyright (C) 2018-2022 Slava Monich <slava.monich@jolla.com>
  *
  * You may use this file under the terms of BSD license as follows:
  *
@@ -35,6 +35,7 @@
 #include "gbinder_writer.h"
 #include "gbinder_config.h"
 #include "gbinder_log.h"
+#include "gbinder_local_object_p.h"
 
 #define STRICT_MODE_PENALTY_GATHER (0x40 << 16)
 #define BINDER_RPC_FLAGS (STRICT_MODE_PENALTY_GATHER)
@@ -212,12 +213,27 @@ gbinder_rpc_protocol_aidl3_read_rpc_header(
     return *iface;
 }
 
+static
+void
+gbinder_rpc_protocol_aidl3_finish_flatten_binder(
+    void* out,
+    GBinderLocalObject* obj)
+{
+    if (G_LIKELY(obj)) {
+        *(guint32*)out = obj->stability;
+    } else {
+        *(guint32*)out = GBINDER_STABILITY_UNDECLARED;
+    }
+}
+
 static const GBinderRpcProtocol gbinder_rpc_protocol_aidl3 = {
     .name = "aidl3",
     .ping_tx = GBINDER_PING_TRANSACTION,
     .write_ping = gbinder_rpc_protocol_aidl_write_ping, /* no payload */
     .write_rpc_header = gbinder_rpc_protocol_aidl3_write_rpc_header,
-    .read_rpc_header = gbinder_rpc_protocol_aidl3_read_rpc_header
+    .read_rpc_header = gbinder_rpc_protocol_aidl3_read_rpc_header,
+    .flat_binder_object_extra = 4,
+    .finish_flatten_binder = gbinder_rpc_protocol_aidl3_finish_flatten_binder
 };
 
 /*==========================================================================*
